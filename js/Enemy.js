@@ -9,7 +9,7 @@ function Enemy(imgData,imgIndex,speed){
   var col= 4,row=4;
   base(this,LSprite,[]);
 
-  this.speed = speed===null?3:speed;
+  this.speed = speed==null?3:speed;
   this.speedIndex = 0;
 
   imgData.setProperties(0,0,imgData.image.width/col,imgData.image.height/row);

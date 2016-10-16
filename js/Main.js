@@ -16,6 +16,8 @@ var loadingLayer;
 var backLayer;
 //地图层
 var mapLayer;
+//物品层
+var itemLayer;
 //人物层
 var charaLayer;
 //效果层
@@ -46,6 +48,8 @@ var mainGameWidth = 11;
 var mainGameHight = 11;
 var offsetX = 1;
 var offsetY = 1;
+
+var isKeyDown = false;
 /**
  * 数组变量
  */
@@ -99,6 +103,12 @@ var gameInit = function(event){
 
   //添加贞事件，开始游戏循环
   backLayer.addEventListener(LEvent.ENTER_FRAME,onFrame);
+  if(!LGlobal.canTouch){
+    //电脑的时候，添加键盘事件 【上 下 左 右 空格】
+    LEvent.addEventListener(LGlobal.window,LKeyboardEvent.KEY_DOWN,onkeydown);
+    LEvent.addEventListener(LGlobal.window,LKeyboardEvent.KEY_UP,onkeyup);
+  }
+
 };
 
 /**
@@ -112,6 +122,9 @@ function layerInit(){
   //地图层添加
   mapLayer = new LSprite();
   backLayer.addChild(mapLayer);
+  //物品层添加
+  itemLayer = new LSprite();
+  backLayer.addChild(itemLayer);
   //人物层添加
   charaLayer = new LSprite();
   backLayer.addChild(charaLayer);
@@ -132,7 +145,7 @@ var mapInit = function(){
     //地图图片数据
     bitmapdata = new LBitmapData(imgList["map"]);
     //将地图图片拆分，得到拆分后的各个小图片的坐标数组
-    imageArray = LGlobal.divideCoordinate(bitmapdata.image.width,bitmapdata.image.height,4,2);
+    imageArray = LGlobal.divideCoordinate(bitmapdata.image.width,bitmapdata.image.height,4,4);
   }
 };
 
@@ -145,11 +158,11 @@ var addBackground = function(){
   for(i=0;i<13;i++)
     for(j=0;j<13;j++){
       if(i==0||j==0||i==12||j==12){
-        indexY = 1;
-        indexX = 1;
+        indexY = 0;
+        indexX = 3;
       }else{
-        indexY = 1;
-        indexX = 0;
+        indexY = 0;
+        indexX = 2;
       }
       //得到小图片
       bitmapdata = new LBitmapData(imgList["map"],indexX*STEP,indexY*STEP,STEP,STEP);
@@ -161,8 +174,10 @@ var addBackground = function(){
       backLayer.addChild(bitmap);
     }
 };
-
-var addMap = function(){
+/**
+ *
+ */
+function addMap(){
   var i,j,index,indexX,indexY;
   var bitmapdata,bitmap;
 
@@ -173,9 +188,9 @@ var addMap = function(){
       //从地图数组中得到相应位置的图片坐标
       index = map[i][j];
       //小图片的竖坐标
-      indexY = Math.floor(index /2);
+      indexY = Math.floor(index /4);
       //小图片的横坐标
-      indexX = index - indexY*2;
+      indexX = index - indexY*4;
       //得到小图片
       bitmapdata = new LBitmapData(imgList["map"],indexX*STEP,indexY*STEP,STEP,STEP);
       bitmap = new LBitmap(bitmapdata);
@@ -196,10 +211,10 @@ function addHero(){
   var bitmapdata = new LBitmapData(imgList[heroData.img]);
   hero = new Hero(heroData.property,bitmapdata);
 
-  hero.x = (heroData.position.x+offsetX)*STEP;
-  hero.y = (heroData.position.y+offsetY)*STEP;
+  hero.x = (heroData.x+offsetX)*STEP;
+  hero.y = (heroData.y+offsetY)*STEP;
 
-  //charaLayer.addChild(hero);
+  charaLayer.addChild(hero);
 }
 /**
  * 添加怪物
@@ -217,6 +232,25 @@ function addEnemy(){
 
   charaLayer.addChild(enemy);
   }
+}
+/**
+ *
+ * @param event
+ */
+function onkeydown(event){
+  if(event.keyCode == 37){//left
+    hero.changeDir(LEFT);
+  }else if(event.keyCode == 38){//up
+    hero.changeDir(UP);
+  }else if(event.keyCode == 39){//right
+    hero.changeDir(RIGHT);
+  }else if(event.keyCode == 40){//down
+    hero.changeDir(DOWN);
+  }
+  isKeyDown = true;
+}
+function onkeyup(event){
+  isKeyDown = false;
 }
 /**
  * 帧循环
