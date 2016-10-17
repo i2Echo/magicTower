@@ -31,10 +31,6 @@ var ctrlLayer;
  */
 //英雄
 var hero;
-//NPC
-var npc;
-//怪物
-var enemy;
 /**
  * 常量
  */
@@ -58,13 +54,14 @@ var imgData = [];
 //储存加载后的图片列表信息
 var imgList = [];
 var imageArray;
-
+//楼层
 var floor;
+var enemyList;
+var itemList;
 /**
  * 主程序
  */
 function main(){
-
   //
   imgData.push({type:"js",path:"./js/Map.js"});
   imgData.push({type:"js",path:"./js/script.js"});
@@ -74,6 +71,7 @@ function main(){
   imgData.push({name:"map", path:"./images/map.png"});
   imgData.push({name:"hero", path:"./images/hero.png"});
   imgData.push({name:"slime", path:"./images/slime.png"});
+  imgData.push({name:"items", path:"./images/items.png"});
 
   loadingLayer = new LoadingSample3();
   addChild(loadingLayer);
@@ -99,6 +97,8 @@ var gameInit = function(event){
   //地图图片初始化
   mapInit();
   floor = script.floor01;
+  enemyList = enemyInfo;
+  itemList = itemsInfo;
   scriptInit(floor);
 
   //添加贞事件，开始游戏循环
@@ -187,18 +187,20 @@ function addMap(){
     for(j=0;j<11;j++){
       //从地图数组中得到相应位置的图片坐标
       index = map[i][j];
-      //小图片的竖坐标
-      indexY = Math.floor(index /4);
-      //小图片的横坐标
-      indexX = index - indexY*4;
-      //得到小图片
-      bitmapdata = new LBitmapData(imgList["map"],indexX*STEP,indexY*STEP,STEP,STEP);
-      bitmap = new LBitmap(bitmapdata);
-      //设置小图片的显示位置
-      bitmap.x = (j+offsetX)*STEP;
-      bitmap.y = (i+offsetY)*STEP;
-      //将小图片显示到地图层
-      mapLayer.addChild(bitmap);
+      if(index!=0){
+        //小图片的竖坐标
+        indexY = Math.floor(index/4);
+        //小图片的横坐标
+        indexX = index - indexY*4;
+        //得到小图片
+        bitmapdata = new LBitmapData(imgList["map"],indexX*STEP,indexY*STEP,STEP,STEP);
+        bitmap = new LBitmap(bitmapdata);
+        //设置小图片的显示位置
+        bitmap.x = (j+offsetX)*STEP;
+        bitmap.y = (i+offsetY)*STEP;
+        //将小图片显示到地图层
+        mapLayer.addChild(bitmap);
+      }
     }
   }
 };
@@ -220,17 +222,44 @@ function addHero(){
  * 添加怪物
  */
 function addEnemy(){
-  var enemyList = floor.enemy;
-  var enemyObj;
-  for(var i=0; i<enemyList.length; i++){
-    enemyObj = enemyList[i];
-    var bitmapdata = new LBitmapData(imgList[enemyObj.img]);
-    enemy = new Enemy(bitmapdata,enemyObj.index,1);
+  var enemyArray = floor.enemy;
+  var enemyId, enemyObj;
+  for(var i=0; i<enemyArray.length; i++){
+    for(var j=0; j<enemyArray[i].length; j++){
+      enemyId = enemyArray[i][j];
+      if(enemyId!=0){
+        enemyObj = enemyList[enemyId-1];
+        var bitmapdata = new LBitmapData(imgList[enemyObj.img]);
+        var enemy = new Enemy(bitmapdata,enemyObj.imgIndex,1);
 
-  enemy.x = (enemyObj.x+offsetX)*STEP;
-  enemy.y = (enemyObj.y+offsetY)*STEP;
+        enemy.x = (j+offsetX)*STEP;
+        enemy.y = (i+offsetY)*STEP;
 
-  charaLayer.addChild(enemy);
+        charaLayer.addChild(enemy);
+      }
+    }
+  }
+}
+
+function addItems(){
+  var itemArray = floor.items;
+  var itemId, itemObj, indexX, indexY;
+  for(var i=0; i<itemArray.length; i++){
+    for(var j=0; j<itemArray[i].length; j++){
+      itemId = itemArray[i][j];
+      if(itemId!=0){
+        itemObj = itemList[itemId-1];
+        indexY = Math.floor((itemId-1)/4);
+        indexX = (itemId-1) - indexY*4;
+        var bitmapdata = new LBitmapData(imgList[itemObj.img],STEP*indexX,STEP*indexY,STEP,STEP);
+        var bitmap = new LBitmap(bitmapdata);
+
+        bitmap.x = (j+offsetX)*STEP;
+        bitmap.y = (i+offsetY)*STEP;
+
+        itemLayer.addChild(bitmap);
+      }
+    }
   }
 }
 /**

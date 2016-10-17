@@ -24,7 +24,7 @@ function Hero(heroData, imgData) {
 
 }
 /**
- * 设置英雄坐标
+ * 设置英雄块坐标
  * @param x
  * @param y
  */
@@ -33,7 +33,7 @@ Hero.prototype.setPosition = function(x, y){
   this.y = (y+offsetY)*STEP;
 };
 /**
- * 获取当前坐标
+ * 获取当前块坐标
  * @returns {{x: number, y: number}}
  */
 Hero.prototype.getPosition = function(){
@@ -68,7 +68,7 @@ Hero.prototype.onmove = function() {
   this.anime.onframe();
   this.moveCnt++;
   if (this.moveCnt >= mv_cnt) {
-    checkJump();
+    checkJump(floor);
     this.moveCnt = 0;
     if (this.direction != this.direction_next) {
       this.direction = this.direction_next;
