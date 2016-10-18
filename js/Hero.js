@@ -10,7 +10,6 @@
 function Hero(heroData, imgData) {
   var col = 4, row = 4;
   base(this, LSprite, []);
-  this.property = heroData.property;
 
   imgData.setProperties(0, 0, imgData.image.width / col, imgData.image.height / row);
   var list = LGlobal.divideCoordinate(imgData.image.width, imgData.image.height, row, col);
@@ -21,7 +20,7 @@ function Hero(heroData, imgData) {
   this.move = false;
   //记录一个步长中当前移动次数
   this.moveCnt = 0;
-
+  this.isFight = false;
 }
 /**
  * 设置英雄块坐标
@@ -110,12 +109,40 @@ Hero.prototype.checkRoad = function(direction) {
       toy = current_position.y;
       break;
   }
-  console.log(toy,tox,current_position,direction);
+  //console.log(toy,tox,current_position,direction);
   //如果超过地图范围则不可移动
   if(toy<0 || tox<0 || toy>=mapdata.length || tox>=mapdata[0].length)
     return false;
-  //如果为障碍物则不可移动
-  if(mapdata[toy][tox] == 1)return false;
+  //获取墙层目标块的地形id
+  var targetTileId = mapdata[toy][tox];
+  //如果不为0表示有墙
+  if(targetTileId){
+    return false;
+  }
+  //获取怪物层目标块的地形id
+  var enemydata = floor.enemy;
+  targetTileId = enemydata[toy][tox];
+  //如果不为0表示有怪
+  if(targetTileId){
+    this.fight(tox,toy,targetTileId);
+    return false;
+  }
+  //获取物品层目标块的地形id
+  var itemdata = floor.items;
+  targetTileId = itemdata[toy][tox];
+  //如果不为0表示有物品
+  if(targetTileId){
+    this.pickUpItem(tox,toy,targetTileId);
+    return false;
+  }
+  //获取门层目标块的地形id
+  var doordata = floor.door;
+  targetTileId = doordata[toy][tox];
+  //如果不为0表示有门
+  if(targetTileId){
+    this.openDoor(tox,toy,targetTileId);
+    return false;
+  }
 
   return true;
 };
@@ -131,7 +158,6 @@ Hero.prototype.changeDir = function(direction){
     this.anime.setAction(direction, mode=0);
     this.anime.onframe();
 
-    console.log(this.checkRoad(direction));
     if(!this.checkRoad(direction))return;
 
     this.move = true;
@@ -140,10 +166,33 @@ Hero.prototype.changeDir = function(direction){
     this.direction_next = direction;
   }
 };
+Hero.prototype.fight = function(x,y,enemyId){
+  if(!this.isFight){
+    this.isFight = true;
+    //战斗数据交互
+    //战斗特效
+    //战斗结束删除怪物
+    this.isFight = false;
+    floor.enemy[y][x] = 0;
+    updateEnemy();
+    console.log("fight");
+  }
+
+};
+Hero.prototype.pickUpItem = function(x,y,itemId){
+  floor.items[y][x] = 0;
+  updateItems();
+  console.log("pick up");
+};
+Hero.prototype.openDoor = function(x,y,doorId){
+  floor.door[y][x] = 0;
+  updateDoor();
+  console.log("open the door");
+};
+
 Hero.prototype.onframe = function(){
   if(this.move){
     this.onmove();
   }
-
 };
 

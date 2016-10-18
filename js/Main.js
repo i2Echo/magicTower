@@ -16,10 +16,18 @@ var loadingLayer;
 var backLayer;
 //地图层
 var mapLayer;
+//门层
+var doorLayer;
 //物品层
 var itemLayer;
-//人物层
+//人物层(包含英雄，怪物，NPC)
 var charaLayer;
+//玩家层
+var playerLayer;
+//怪物层
+var enemyLayer;
+//NPC层
+var npcLayer;
 //效果层
 var effectLayer;
 //对话层
@@ -46,6 +54,7 @@ var offsetX = 1;
 var offsetY = 1;
 
 var isKeyDown = false;
+
 /**
  * 数组变量
  */
@@ -58,10 +67,12 @@ var imageArray;
 var floor;
 var enemyList;
 var itemList;
+var doorList;
 /**
  * 主程序
  */
 function main(){
+  LGlobal.setDebug(true);
   //
   imgData.push({type:"js",path:"./js/Map.js"});
   imgData.push({type:"js",path:"./js/script.js"});
@@ -99,6 +110,7 @@ var gameInit = function(event){
   floor = script.floor01;
   enemyList = enemyInfo;
   itemList = itemsInfo;
+  doorList = doorInfo;
   scriptInit(floor);
 
   //添加贞事件，开始游戏循环
@@ -122,12 +134,20 @@ function layerInit(){
   //地图层添加
   mapLayer = new LSprite();
   backLayer.addChild(mapLayer);
+  doorLayer = new LSprite();
+  backLayer.addChild(doorLayer);
   //物品层添加
   itemLayer = new LSprite();
   backLayer.addChild(itemLayer);
   //人物层添加
   charaLayer = new LSprite();
   backLayer.addChild(charaLayer);
+  playerLayer = new LSprite();
+  charaLayer.addChild(playerLayer);
+  enemyLayer = new LSprite();
+  charaLayer.addChild(enemyLayer);
+  npcLayer = new LSprite();
+  charaLayer.addChild(npcLayer);
   //效果层添加
   effectLayer = new LSprite();
   backLayer.addChild(effectLayer);
@@ -216,7 +236,7 @@ function addHero(){
   hero.x = (heroData.x+offsetX)*STEP;
   hero.y = (heroData.y+offsetY)*STEP;
 
-  charaLayer.addChild(hero);
+  playerLayer.addChild(hero);
 }
 /**
  * 添加怪物
@@ -235,10 +255,15 @@ function addEnemy(){
         enemy.x = (j+offsetX)*STEP;
         enemy.y = (i+offsetY)*STEP;
 
-        charaLayer.addChild(enemy);
+        enemyLayer.addChild(enemy);
       }
     }
   }
+}
+
+function updateEnemy(){
+  enemyLayer.removeAllChild();
+  addEnemy();
 }
 
 function addItems(){
@@ -261,6 +286,37 @@ function addItems(){
       }
     }
   }
+}
+function updateItems(){
+  itemLayer.removeAllChild();
+  addItems();
+}
+
+function addDoor(){
+  var doorArray = floor.door;
+  var doorId, doorObj, indexX, indexY;
+  for(var i=0; i<doorArray.length; i++){
+    for(var j=0; j<doorArray[i].length; j++){
+      doorId = doorArray[i][j];
+      if(doorId!=0){
+        for(var k=0; k<doorList.length; k++)
+          if(doorList[k].id == doorId)doorObj = doorList[k];
+        indexY = Math.floor(doorObj.imgIndex/4);
+        indexX = doorObj.imgIndex - indexY*4;
+        var bitmapdata = new LBitmapData(imgList[doorObj.img],STEP*indexX,STEP*indexY,STEP,STEP);
+        var bitmap = new LBitmap(bitmapdata);
+
+        bitmap.x = (j+offsetX)*STEP;
+        bitmap.y = (i+offsetY)*STEP;
+
+        doorLayer.addChild(bitmap);
+      }
+    }
+  }
+}
+function updateDoor(){
+  doorLayer.removeAllChild();
+  addDoor();
 }
 /**
  *
@@ -285,7 +341,8 @@ function onkeyup(event){
  * 帧循环
  * */
 function onFrame(){
-  for(var i=0;i<charaLayer.childList.length;i++){
-    charaLayer.childList[i].onframe();
+  for(var i=0;i<charaLayer.childList.length;i++)
+    for(var j=0;j<charaLayer.childList[i].childList.length;j++){
+      charaLayer.childList[i].childList[j].onframe();
   }
 }
