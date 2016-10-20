@@ -231,7 +231,7 @@ function addHero(){
   var heroData = floor.hero;
 
   var bitmapdata = new LBitmapData(imgList[heroData.img]);
-  hero = new Hero(heroData.property,bitmapdata);
+  hero = new Hero(heroData, bitmapdata);
 
   hero.x = (heroData.x+offsetX)*STEP;
   hero.y = (heroData.y+offsetY)*STEP;
@@ -250,7 +250,7 @@ function addEnemy(){
       if(enemyId!=0){
         enemyObj = enemyList[enemyId-1];
         var bitmapdata = new LBitmapData(imgList[enemyObj.img]);
-        var enemy = new Enemy(bitmapdata,enemyObj.imgIndex,1);
+        var enemy = new Enemy(enemyObj, bitmapdata, 1);
 
         enemy.x = (j+offsetX)*STEP;
         enemy.y = (i+offsetY)*STEP;

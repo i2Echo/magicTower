@@ -5,10 +5,10 @@
 /**
  * 怪物
  */
-function Enemy(imgData,imgIndex,speed){
+function Enemy(enemyData,imgData,speed){
   var col= 4,row=4;
   base(this,LSprite,[]);
-
+  this.property = JSON.parse(JSON.stringify(enemyData.property));
   this.speed = speed==null?3:speed;
   this.speedIndex = 0;
 
@@ -16,7 +16,7 @@ function Enemy(imgData,imgIndex,speed){
   var list = LGlobal.divideCoordinate(imgData.image.width,imgData.image.height,row,col);
 
   this.anime = new LAnimation(this,imgData,list);
-  this.anime.setAction(imgIndex);
+  this.anime.setAction(enemyData.imgIndex);
 }
 
 Enemy.prototype.onframe = function(){

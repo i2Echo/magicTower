@@ -10,6 +10,9 @@
 function Hero(heroData, imgData) {
   var col = 4, row = 4;
   base(this, LSprite, []);
+  this.name = heroData.name;
+  this.property = heroData.property;
+  this.pack = heroData.pack;
 
   imgData.setProperties(0, 0, imgData.image.width / col, imgData.image.height / row);
   var list = LGlobal.divideCoordinate(imgData.image.width, imgData.image.height, row, col);
@@ -124,7 +127,21 @@ Hero.prototype.checkRoad = function(direction) {
   targetTileId = enemydata[toy][tox];
   //如果不为0表示有怪
   if(targetTileId){
-    this.fight(tox,toy,targetTileId);
+    //var isCanFight = false;
+    var enemyObj = enemyList[targetTileId - 1];
+    var heroATK = this.property.ATK;
+    var heroHP = this.property.HP;
+    var heroDEF = this.property.DEF;
+    var enemyATK = enemyObj.property.ATK;
+    var enemyHP = enemyObj.property.HP;
+    var enemyDEF = enemyObj.property.DEF;
+    if(heroATK>enemyDEF)
+      Math.ceil(enemyHP/(heroATK-enemyDEF)) <= Math.ceil(heroHP/(enemyATK-heroDEF))){
+
+      this.fight(tox,toy,enemyObj.property);
+    }else{
+      console.log("can't beat it");
+    }
     return false;
   }
   //获取物品层目标块的地形id
@@ -140,7 +157,15 @@ Hero.prototype.checkRoad = function(direction) {
   targetTileId = doordata[toy][tox];
   //如果不为0表示有门
   if(targetTileId){
-    this.openDoor(tox,toy,targetTileId);
+    var keyId = doorList[targetTileId-1].keyId;
+    var isCanOpen = false;
+    if(keyId > 3){
+      isCanOpen = true;
+    }else if(this.pack[keyId] > 0){
+      isCanOpen = true;
+    }
+    if(isCanOpen)this.openDoor(tox,toy,keyId);
+
     return false;
   }
 
@@ -166,10 +191,11 @@ Hero.prototype.changeDir = function(direction){
     this.direction_next = direction;
   }
 };
-Hero.prototype.fight = function(x,y,enemyId){
+Hero.prototype.fight = function(x,y,enemyProp){
   if(!this.isFight){
     this.isFight = true;
     //战斗数据交互
+    this.property.HP -= (enemyProp.ATK - this.property.DEF)*(Math.ceil(enemyProp.HP/(this.property.ATK-enemyProp.DEF))-1);
     //战斗特效
     //战斗结束删除怪物
     this.isFight = false;
@@ -180,11 +206,27 @@ Hero.prototype.fight = function(x,y,enemyId){
 
 };
 Hero.prototype.pickUpItem = function(x,y,itemId){
+  var itemObj = itemList[itemId-1];
+  if(itemObj.type){
+    //非立即自动生效物品数量加1
+    if(this.pack[itemId] == null){
+      this.pack[itemId] = 0;
+    }
+    this.pack[itemId] += 1;
+  }else{
+    //拾取立即生效物品添加对应属性
+    var prop = Object.getOwnPropertyNames(itemObj.func)[0];
+    this.property[prop] += itemObj.func[prop];
+  }
   floor.items[y][x] = 0;
   updateItems();
   console.log("pick up");
+  console.log(floor.hero.property, floor.hero.pack);
 };
-Hero.prototype.openDoor = function(x,y,doorId){
+Hero.prototype.openDoor = function(x,y,keyId){
+  if(this.pack[keyId]){
+    this.pack[keyId] -= 1;
+  }
   floor.door[y][x] = 0;
   updateDoor();
   console.log("open the door");

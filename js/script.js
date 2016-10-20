@@ -1,40 +1,36 @@
 /**
  * Created by PC on 10/14/2016.
  */
-var itemsInfo = [
-  {id:1, name:"yellowKey", img:"items"}
-  ,{id:2, name:"blueKey",img:"items"}
-  ,{id:3, name:"redKey", img:"items"}
-  ,{id:4, name:"magicKey", img:"items"}
-  ,{id:5, name:"redHP", img:"items"}
-  ,{id:6, name:"blueHP", img:"items"}
-  ,{id:7, name:"ruby", img:"items"}
-  ,{id:8, name:"sapphire", img:"items"}
-  ,{id:9, name:"ironSword", img:"items"}
-  ,{id:10, name:"ironShield", img:"items"}
+var itemsInfo = [//type为物品生效类型0:立即自动生效；1:条件触发自动生效; 2:手动生效
+  {id:1, name:"yellowKey", img:"items", type:1}
+  ,{id:2, name:"blueKey",img:"items", type:1}
+  ,{id:3, name:"redKey", img:"items", type:1}
+  ,{id:4, name:"magicKey", img:"items", type:1}
+  ,{id:5, name:"redHP", img:"items", type:0, func:{HP:50}}
+  ,{id:6, name:"blueHP", img:"items", type:0, func:{HP:200}}
+  ,{id:7, name:"ruby", img:"items", type:0, func:{ATK:1}}
+  ,{id:8, name:"sapphire", img:"items", type:0, func:{DEF:1}}
+  ,{id:9, name:"ironSword", img:"items", type:0, func:{ATK:10}}
+  ,{id:10, name:"ironShield", img:"items", type:0, func:{DEF:10}}
 ];
 var enemyInfo = [
-  {id:1, name:"greenSlime", img:"slime", imgIndex:0}
-  ,{id:2, name:"redSlime", img:"slime", imgIndex:1}
-  ,{id:3, name:"redKey"}
-  ,{id:4, name:"magicKey"}
-  ,{id:5, name:"redHP"}
-  ,{id:6, name:"blueHP"}
-  ,{id:7, name:"ruby"}
-  ,{id:8, name:"sapphire"}
-  ,{id:9, name:"ironSword"}
-  ,{id:10, name:"ironShield"}
+  {id:1, name:"greenSlime", img:"slime", imgIndex:0
+    ,property:{HP: 35, ATK: 18, DEF: 1, gold: 1}}
+  ,{id:2, name:"redSlime", img:"slime", imgIndex:1
+    ,property:{HP: 45, ATK: 20, DEF: 2, gold: 2}}
+
 ];
 var doorInfo = [
-  {id:1, name:"wallDoor", img:"map", imgIndex:1}
-  ,{id:2, name:"ironDoor", img:"map", imgIndex:11}
-  ,{id:3, name:"yellowDoor", img:"map", imgIndex:4}
-  ,{id:4, name:"blueDoor", img:"map", imgIndex:5}
-  ,{id:5, name:"redDoor", img:"map", imgIndex:6}
-  ,{id:6, name:"GreenDoor", img:"map", imgIndex:7}
+  {id:1, name:"yellowDoor", img:"map", imgIndex:4, keyId: 1}
+  ,{id:2, name:"blueDoor", img:"map", imgIndex:5, keyId: 2}
+  ,{id:3, name:"redDoor", img:"map", imgIndex:6, keyId: 3}
+  ,{id:4, name:"GreenDoor", img:"map", imgIndex:7, keyId: 4}
+  ,{id:5, name:"ironDoor", img:"map", imgIndex:11, keyId: 5}
+  ,{id:6, name:"wallDoor", img:"map", imgIndex:1, keyId: 6}
 ];
 var script = {
   floor01: {
+    domain: 1,
     map: [
       [12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
@@ -64,19 +60,27 @@ var script = {
     door: [
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 3, 0, 0, 0, 0, 0, 0, 3, 0, 0],
-      [0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0],
+      [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+      [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 3, 0, 0, 0, 3, 0],
+      [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     ],
     hero: {
       name: "勇士",
       img: "hero",
+      property:{
+        HP: 1000,
+        ATK: 100,
+        DEF: 100,
+        gold: 0
+      },
+      pack:{
+      },
       x: 5,
       y: 10
     },
@@ -97,11 +101,11 @@ var script = {
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       [5, 0, 0, 0, 0, 0, 7, 1, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 8, 5, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 0, 8, 5, 0, 0, 0],
+      [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+      [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       [5, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
       [5, 0, 1, 0, 0, 0, 0, 0, 0, 6, 0]
