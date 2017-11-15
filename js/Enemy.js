@@ -1,20 +1,26 @@
-/**
- * Created by PC on 10/14/2016.
- */
 
 /**
  * 怪物
  */
-function Enemy(enemyData,imgData,speed){
-  var col= 4,row=4;
+
+
+function Enemy(enemyData,speed){
+  // 怪物图片的怪物数宽高
+  var IMG_COL = 4;
+  var IMG_ROW = 40;
+
   base(this,LSprite,[]);
+  
   this.property = JSON.parse(JSON.stringify(enemyData.property));
-  this.speed = speed==null?3:speed;
+  this.speed = speed === null ? 3 : speed;
   this.speedIndex = 0;
 
-  imgData.setProperties(0,0,imgData.image.width/col,imgData.image.height/row);
-  var list = LGlobal.divideCoordinate(imgData.image.width,imgData.image.height,row,col);
-
+  var imgData = new LBitmapData(imgList[enemyData.img]);
+  var width = imgData.image.width;
+  var height = imgData.image.height;
+  imgData.setProperties(0, 0, 32, 32);
+  var list = LGlobal.divideCoordinate(width, height, IMG_ROW, IMG_COL);
+  // log(width, height)
   this.anime = new LAnimation(this,imgData,list);
   this.anime.setAction(enemyData.imgIndex);
 }

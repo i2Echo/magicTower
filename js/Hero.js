@@ -1,6 +1,3 @@
-/**
- * Created by PC on 10/14/2016.
- */
 
 /**
  * 英雄设定
@@ -8,38 +5,47 @@
  * @constructor
  */
 function Hero(heroData, imgData) {
-  var col = 4, row = 4;
-  base(this, LSprite, []);
-  this.name = heroData.name;
-  this.property = heroData.property;
-  this.pack = heroData.pack;
 
-  imgData.setProperties(0, 0, imgData.image.width / col, imgData.image.height / row);
-  var list = LGlobal.divideCoordinate(imgData.image.width, imgData.image.height, row, col);
+  var IMG_COL = 4;
+  var IMG_ROW = 4;
 
-  this.anime = new LAnimation(this, imgData, list);
+  var self = this;
+  base(self, LSprite, []);
+  self.name = heroData.name;
+  //这里对象需要浅复制
+  self.property = heroData.property;
+  self.pack = heroData.pack;
+  self.position = heroData.position;
+
+  var imgData = new LBitmapData(imgList[heroData.img]);
+  imgData.setProperties(0, 0, imgData.image.width / IMG_COL, imgData.image.height / IMG_ROW);
+  var list = LGlobal.divideCoordinate(imgData.image.width, imgData.image.height, IMG_ROW, IMG_COL);
+
+  self.anime = new LAnimation(self, imgData, list);
 
   //初始设定不移动
-  this.move = false;
-  //记录一个步长中当前移动次数
-  this.moveCnt = 0;
-  this.isFight = false;
+  self.move = false;
+  //记录移动一格中当前移动次数
+  self.moveCnt = 0;
+  //是否在战斗
+  self.isFight = false;
 }
 /**
- * 设置英雄块坐标
+ * 设置英雄坐标
  * @param x
  * @param y
  */
-Hero.prototype.setPosition = function(x, y){
-  this.x = (x+offsetX)*STEP;
-  this.y = (y+offsetY)*STEP;
+Hero.prototype.setPosition = function(floor, x, y){
+  this.position.atFloor = floor;
+  this.position.x = x;
+  this.position.y = y;
 };
 /**
- * 获取当前块坐标
+ * 获取当前坐标
  * @returns {{x: number, y: number}}
  */
 Hero.prototype.getPosition = function(){
-  return {x:(this.x/STEP)-offsetX, y:(this.y/STEP)-offsetY};
+  return this.position;
 };
 
 /**
@@ -47,37 +53,43 @@ Hero.prototype.getPosition = function(){
  * @for Hero
  * @return {void}
  */
-Hero.prototype.onmove = function() {
-  //设定每次移动次数
+Hero.prototype.onmove = function(){
+  var self = this;
+  //设定每格移动次数
   var mv_cnt = 4;
   //设置移动步长
   var move_length = STEP/mv_cnt;
-
-  switch (this.direction) {
+  self.moveCnt++;
+  var aStep = self.moveCnt >= mv_cnt ? 1 : 0;
+  switch (self.direction) {
     case UP:
-      this.y -= move_length;
+      self.y -= move_length;
+      self.position.y -= aStep;
       break;
     case DOWN:
-      this.y += move_length;
+      self.y += move_length;
+      self.position.y += aStep;
       break;
     case LEFT:
-      this.x -= move_length;
+      self.x -= move_length;
+      self.position.x -= aStep;
       break;
     case RIGHT:
-      this.x += move_length;
+      self.x += move_length;
+      self.position.x += aStep;
       break;
   }
-  this.anime.onframe();
-  this.moveCnt++;
-  if (this.moveCnt >= mv_cnt) {
-    checkJump(floor);
-    this.moveCnt = 0;
-    if (this.direction != this.direction_next) {
-      this.direction = this.direction_next;
-      this.anime.setAction(this.direction);
+  self.anime.onframe();
+  
+  if (self.moveCnt >= mv_cnt) { //一格移动完成
+    checkJump();
+    self.moveCnt = 0;
+    if (self.direction != self.direction_next) {
+      self.direction = self.direction_next;
+      self.anime.setAction(self.direction);
     }
-    if (!isKeyDown || !this.checkRoad()) {
-      this.move = false;
+    if (!isKeyDown || !self.checkRoad(self.direction)) {
+      self.move = false;
     }
   }
 };
@@ -87,8 +99,8 @@ Hero.prototype.onmove = function() {
  * @param direction
  * @returns {boolean}
  */
-Hero.prototype.checkRoad = function(direction) {
-  var tox, toy, current_position;
+Hero.prototype.checkRoad = function(direction){
+  var to_x, to_y, current_position;
 
   if(direction==null)
     direction = this.direction;
@@ -96,80 +108,54 @@ Hero.prototype.checkRoad = function(direction) {
   //移动目的地坐标
   switch (direction){
     case UP:
-      tox = current_position.x;
-      toy = current_position.y - 1;
+      to_x = current_position.x;
+      to_y = current_position.y - 1;
       break;
     case DOWN:
-      tox = current_position.x;
-      toy = current_position.y + 1;
+      to_x = current_position.x;
+      to_y = current_position.y + 1;
       break;
     case LEFT:
-      tox = current_position.x - 1;
-      toy = current_position.y;
+      to_x = current_position.x - 1;
+      to_y = current_position.y;
       break;
     case RIGHT:
-      tox = current_position.x + 1;
-      toy = current_position.y;
+      to_x = current_position.x + 1;
+      to_y = current_position.y;
       break;
   }
-  //console.log(toy,tox,current_position,direction);
   //如果超过地图范围则不可移动
-  if(toy<0 || tox<0 || toy>=mapdata.length || tox>=mapdata[0].length)
+  if(to_y<0 || to_x<0 || to_y>=MAIN_GAME_HEIGHT-2 || to_x>=MAIN_GAME_WIDTH-2)
     return false;
-  //获取墙层目标块的地形id
-  var targetTileId = mapdata[toy][tox];
-  //如果不为0表示有墙
-  if(targetTileId){
-    return false;
-  }
-  //获取怪物层目标块的地形id
-  var enemydata = floor.enemy;
-  targetTileId = enemydata[toy][tox];
-  //如果不为0表示有怪
-  if(targetTileId){
-    //var isCanFight = false;
-    var enemyObj = enemyList[targetTileId - 1];
-    var heroATK = this.property.ATK;
-    var heroHP = this.property.HP;
-    var heroDEF = this.property.DEF;
-    var enemyATK = enemyObj.property.ATK;
-    var enemyHP = enemyObj.property.HP;
-    var enemyDEF = enemyObj.property.DEF;
-    if(heroATK>enemyDEF)
-      Math.ceil(enemyHP/(heroATK-enemyDEF)) <= Math.ceil(heroHP/(enemyATK-heroDEF))){
+  //获取目标块的地形id
+  var targetTileId = map[to_y][to_x];
+  //如果不为0或者上下楼梯（4,5）表示有障碍物
+  if(targetTileId === 0 || targetTileId === 4 || targetTileId === 5)
+    return true;
+  else {
+    // 遇到怪物
+    if(_getTypeById(targetTileId) === 'enemy'){
 
-      this.fight(tox,toy,enemyObj.property);
-    }else{
-      console.log("can't beat it");
+      var enemy = _findInfoById(targetTileId);
+      if(_isCanFight(this, enemy))this.fight(to_x,to_y,enemy);
+      return false;
     }
-    return false;
-  }
-  //获取物品层目标块的地形id
-  var itemdata = floor.items;
-  targetTileId = itemdata[toy][tox];
-  //如果不为0表示有物品
-  if(targetTileId){
-    this.pickUpItem(tox,toy,targetTileId);
-    return false;
-  }
-  //获取门层目标块的地形id
-  var doordata = floor.door;
-  targetTileId = doordata[toy][tox];
-  //如果不为0表示有门
-  if(targetTileId){
-    var keyId = doorList[targetTileId-1].keyId;
-    var isCanOpen = false;
-    if(keyId > 3){
-      isCanOpen = true;
-    }else if(this.pack[keyId] > 0){
-      isCanOpen = true;
+    //遇到物品
+    if(_getTypeById(targetTileId) === 'item'){
+
+      var item = _findInfoById(targetTileId);
+      this.pickUpItem(to_x,to_y,item);
+      return false;
     }
-    if(isCanOpen)this.openDoor(tox,toy,keyId);
-
-    return false;
+    //遇到门
+    if(_getTypeById(targetTileId) === 'door'){
+      
+      var door = _findInfoById(targetTileId);
+      var keyForDoor = _findInfoById(door.keyId);
+      if(_isCanOpen(this, keyForDoor)) this.openDoor(to_x,to_y,keyForDoor);
+      return false;
+    }
   }
-
-  return true;
 };
 /**
  *
@@ -191,45 +177,64 @@ Hero.prototype.changeDir = function(direction){
     this.direction_next = direction;
   }
 };
-Hero.prototype.fight = function(x,y,enemyProp){
+
+Hero.prototype.fight = function(x,y,enemy){
+
   if(!this.isFight){
     this.isFight = true;
     //战斗数据交互
-    this.property.HP -= (enemyProp.ATK - this.property.DEF)*(Math.ceil(enemyProp.HP/(this.property.ATK-enemyProp.DEF))-1);
-    //战斗特效
+    var enemyProp = enemy.property;
+    if(enemyProp.HP > 0){
+      enemyProp.HP -= this.property.ATK-enemyProp.DEF;
+      enemyProp.HP = enemyProp.HP<0 ? 0 : enemyProp.HP;
+      log(enemyProp);
+    }
+    while(enemyProp.HP > 0){
+      //战斗特效
+      this.property.HP -= enemyProp.ATK - this.property.DEF;
+      enemyProp.HP -= this.property.ATK-enemyProp.DEF;
+      enemyProp.HP = enemyProp.HP<0 ? 0 : enemyProp.HP;
+      log(hero.property);
+      log(enemyProp);
+    }
+    //战斗结算 获得金币，触发剧情等
+    this.property.gold += enemyProp.gold;
+    log(hero.property);
     //战斗结束删除怪物
     this.isFight = false;
-    floor.enemy[y][x] = 0;
+    map[y][x] = 0;
     updateEnemy();
-    console.log("fight");
+    log("Beat the "+enemy.name+", got "+enemyProp.gold+" gold");
   }
-
 };
-Hero.prototype.pickUpItem = function(x,y,itemId){
-  var itemObj = itemList[itemId-1];
-  if(itemObj.type){
+
+Hero.prototype.pickUpItem = function(x,y,item){
+
+  var msg = "";
+  if(item.type){
     //非立即自动生效物品数量加1
-    if(this.pack[itemId] == null){
-      this.pack[itemId] = 0;
+    if(this.pack[item.name] == null){
+      this.pack[item.name] = 0;
     }
-    this.pack[itemId] += 1;
+    this.pack[item.name] += 1;
   }else{
     //拾取立即生效物品添加对应属性
-    var prop = Object.getOwnPropertyNames(itemObj.func)[0];
-    this.property[prop] += itemObj.func[prop];
+    var prop = Object.getOwnPropertyNames(item.func)[0];
+    this.property[prop] += item.func[prop]*floor.domain;
+    msg = ", And hero's "+prop+" add "+item.func[prop]*floor.domain;
   }
-  floor.items[y][x] = 0;
-  updateItems();
-  console.log("pick up");
-  console.log(floor.hero.property, floor.hero.pack);
+  map[y][x] = 0;
+  updateItem();
+  log("Got a "+ item.name+msg);
+  log(hero.property, hero.pack);
 };
-Hero.prototype.openDoor = function(x,y,keyId){
-  if(this.pack[keyId]){
-    this.pack[keyId] -= 1;
-  }
-  floor.door[y][x] = 0;
+Hero.prototype.openDoor = function(x,y,key){
+
+  this.pack[key.name]-= 1;
+  map[y][x] = 0;
   updateDoor();
-  console.log("open the door");
+  log("open the door");
+  log(hero.pack);
 };
 
 Hero.prototype.onframe = function(){
@@ -238,3 +243,31 @@ Hero.prototype.onframe = function(){
   }
 };
 
+var _isCanFight = function(hero, enemy) {
+  var heroATK = hero.property.ATK;
+  var heroHP = hero.property.HP;
+  var heroDEF = hero.property.DEF;
+  var enemyATK = enemy.property.ATK;
+  var enemyHP = enemy.property.HP;
+  var enemyDEF = enemy.property.DEF;
+  log(enemy.name,enemy.property);
+  if(heroDEF >= enemyATK){
+    return true;
+  }else if( heroATK>enemyDEF && Math.ceil(enemyHP/(heroATK-enemyDEF)) <= Math.ceil(heroHP/(enemyATK-heroDEF)) ){
+    return true;
+  }else {
+    return false;
+    log("Can't beat it");
+  }
+}
+
+var _isCanOpen = function(hero, key) {
+
+  // 检测普通钥匙开门
+  if(hero.pack[key.name] > 0) return true;
+  else {
+    log("Can't open, you need a "+key.name);
+    return false;
+  }
+  // 条件门暂未处理
+}
