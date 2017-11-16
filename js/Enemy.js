@@ -15,12 +15,12 @@ function Enemy(enemyData,speed){
   this.speed = speed === null ? 3 : speed;
   this.speedIndex = 0;
 
-  var imgData = new LBitmapData(imgList[enemyData.img]);
+  var imgData = new LBitmapData(dataList[enemyData.img]);
   var width = imgData.image.width;
   var height = imgData.image.height;
   imgData.setProperties(0, 0, 32, 32);
   var list = LGlobal.divideCoordinate(width, height, IMG_ROW, IMG_COL);
-  // log(width, height)
+
   this.anime = new LAnimation(this,imgData,list);
   this.anime.setAction(enemyData.imgIndex);
 }

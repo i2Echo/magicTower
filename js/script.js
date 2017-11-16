@@ -13,7 +13,7 @@ var elementsInfo = [
   ,{id:11, name:"blueDoor", img:"map", imgIndex:9, keyId: 22}
   ,{id:12, name:"redDoor", img:"map", imgIndex:10, keyId: 23}
   ,{id:13, name:"greenDoor", img:"map", imgIndex:11}
-  ,{id:14, name:"ironDoor", img:"map", imgIndex:12}
+  ,{id:14, name:"ironDoor", img:"map", imgIndex:26}
 
 
 // 物品信息 编号为 20+
@@ -74,7 +74,7 @@ var script = {
     name: "勇士",
     img: "hero",
     property:{
-      HP: 1000,
+      HP: 10000,
       ATK: 10,
       DEF: 10,
       gold: 0
@@ -93,14 +93,14 @@ var script = {
   floor01: {
     domain: 1,
     map: [
-      [5, 0, 101, 102, 101, 0, 0, 0, 0, 0, 0],
+      [5, 0, 101, 102, 101, 102, 103, 0, 0, 0, 0],
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
       [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
       [0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0],
       [1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0],
       [0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
       [0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0],
-      [1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+      [1, 0, 1, 1, 0, 0, 0, 103, 104, 0, 0],
       [0, 0, 0, 1, 1, 10, 1, 1, 1, 0, 1],
       [0, 0, 0, 1, 21, 0, 0, 1, 0, 0, 0],
       [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
@@ -126,7 +126,7 @@ var script = {
     ],
     jump: [
       {name: "up", at: {x: 0, y: 10}, to: "floor03", targetAt: {x: 1, y: 10}}
-      ,{name: "down", at: {x: 0, y: 0}, to: "floor02", targetAt: {x: 1, y: 0}}
+      ,{name: "down", at: {x: 0, y: 0}, to: "floor01", targetAt: {x: 1, y: 0}}
     ]
   }
 };

@@ -17,19 +17,36 @@ function Hero(heroData, imgData) {
   self.pack = heroData.pack;
   self.position = heroData.position;
 
-  var imgData = new LBitmapData(imgList[heroData.img]);
+  var imgData = new LBitmapData(dataList[heroData.img]);
   imgData.setProperties(0, 0, imgData.image.width / IMG_COL, imgData.image.height / IMG_ROW);
   var list = LGlobal.divideCoordinate(imgData.image.width, imgData.image.height, IMG_ROW, IMG_COL);
 
   self.anime = new LAnimation(self, imgData, list);
-
+  //移动速度设定
+  self.speed = 0;
+  self.speedIndex = 0;
+  self.isFightFast = true;
+  self.fightSpeed = 10;
   //初始设定不移动
   self.move = false;
   //记录移动一格中当前移动次数
   self.moveCnt = 0;
   //是否在战斗
   self.isFight = false;
+
+  self.around = { //所处环境（其他元素+状态）
+    element: null,
+    canFight: false,
+    canPickup: false
+  }
 }
+Hero.prototype.onframe = function(){
+  if(this.speedIndex++ < this.speed)return;
+	this.speedIndex = 0;
+  if(this.move){
+    this.onmove();
+  }
+};
 /**
  * 设置英雄坐标
  * @param x
@@ -54,42 +71,54 @@ Hero.prototype.getPosition = function(){
  * @return {void}
  */
 Hero.prototype.onmove = function(){
-  var self = this;
-  //设定每格移动次数
-  var mv_cnt = 4;
-  //设置移动步长
-  var move_length = STEP/mv_cnt;
-  self.moveCnt++;
-  var aStep = self.moveCnt >= mv_cnt ? 1 : 0;
-  switch (self.direction) {
-    case UP:
-      self.y -= move_length;
-      self.position.y -= aStep;
-      break;
-    case DOWN:
-      self.y += move_length;
-      self.position.y += aStep;
-      break;
-    case LEFT:
-      self.x -= move_length;
-      self.position.x -= aStep;
-      break;
-    case RIGHT:
-      self.x += move_length;
-      self.position.x += aStep;
-      break;
-  }
-  self.anime.onframe();
-  
-  if (self.moveCnt >= mv_cnt) { //一格移动完成
-    checkJump();
-    self.moveCnt = 0;
-    if (self.direction != self.direction_next) {
-      self.direction = self.direction_next;
-      self.anime.setAction(self.direction);
+  if(!this.isFight){
+    var self = this;
+    //设定每格移动次数
+    var mv_cnt = 4;
+    //设置移动步长
+    var move_length = STEP/mv_cnt;
+    self.moveCnt++;
+    var aStep = self.moveCnt >= mv_cnt ? 1 : 0;
+    switch (self.direction) {
+      case UP:
+        self.y -= move_length;
+        self.position.y -= aStep;
+        break;
+      case DOWN:
+        self.y += move_length;
+        self.position.y += aStep;
+        break;
+      case LEFT:
+        self.x -= move_length;
+        self.position.x -= aStep;
+        break;
+      case RIGHT:
+        self.x += move_length;
+        self.position.x += aStep;
+        break;
     }
-    if (!isKeyDown || !self.checkRoad(self.direction)) {
-      self.move = false;
+    self.anime.onframe();
+    
+    if (self.moveCnt >= mv_cnt) { //一格移动完成
+      if(self.around.canFight) {
+        removeKeyboadListener();
+        self.fight();
+        self.around.canFight = false;
+      }
+      if(self.around.canPickup) {
+        removeKeyboadListener();
+        this.pickUpItem();
+        self.around.canPickup = false;
+      }
+      checkJump();
+      self.moveCnt = 0;
+      if (self.direction != self.direction_next) {
+        self.direction = self.direction_next;
+        self.anime.setAction(self.direction);
+      }
+      if (!isKeyDown || !self.checkRoad(self.direction)) {
+        self.move = false;
+      }
     }
   }
 };
@@ -130,22 +159,28 @@ Hero.prototype.checkRoad = function(direction){
   //获取目标块的地形id
   var targetTileId = map[to_y][to_x];
   //如果不为0或者上下楼梯（4,5）表示有障碍物
-  if(targetTileId === 0 || targetTileId === 4 || targetTileId === 5)
+  if(targetTileId === 0 || targetTileId === 6 || targetTileId === 5)
     return true;
   else {
     // 遇到怪物
     if(_getTypeById(targetTileId) === 'enemy'){
 
       var enemy = _findInfoById(targetTileId);
-      if(_isCanFight(this, enemy))this.fight(to_x,to_y,enemy);
-      return false;
+      if(_isCanFight(this, enemy)){
+        this.around.element = JSON.parse(JSON.stringify(enemy));
+        this.around.canFight = true;
+        // this.fight(to_x,to_y,enemy);
+        return true;
+      }
     }
     //遇到物品
     if(_getTypeById(targetTileId) === 'item'){
 
       var item = _findInfoById(targetTileId);
-      this.pickUpItem(to_x,to_y,item);
-      return false;
+      this.around.element = JSON.parse(JSON.stringify(item));
+      this.around.canPickup = true;
+      // this.pickUpItem(to_x,to_y,item);
+      return true;
     }
     //遇到门
     if(_getTypeById(targetTileId) === 'door'){
@@ -162,6 +197,10 @@ Hero.prototype.checkRoad = function(direction){
  * @param direction
  */
 Hero.prototype.changeDir = function(direction){
+  if(this.isFight) {
+    log('fighting');
+    return;
+  }
   if(!this.move){
     this.direction = direction;
     this.direction_next = direction;
@@ -178,39 +217,80 @@ Hero.prototype.changeDir = function(direction){
   }
 };
 
-Hero.prototype.fight = function(x,y,enemy){
-
-  if(!this.isFight){
-    this.isFight = true;
+Hero.prototype.fight = function(){
+  var self = this;
+  var x = self.position.x,
+    y = self.position.y;
+  var enemy = this.around.element;
+  if(!self.isFight){
+    self.isFight = true;
     //战斗数据交互
     var enemyProp = enemy.property;
-    if(enemyProp.HP > 0){
-      enemyProp.HP -= this.property.ATK-enemyProp.DEF;
-      enemyProp.HP = enemyProp.HP<0 ? 0 : enemyProp.HP;
-      log(enemyProp);
+    var fightTimes = 0
+    if(self.isFightFast){
+      if(!attackSound.playing) attackSound.play();
+      addFightEffect();
+      setTimeout(function(){
+        effectLayer.removeAllChild();
+        //战斗结算 获得金币，触发剧情等
+        self.property.gold += enemyProp.gold;
+        log(hero.property, heroStyle);
+        //战斗结束删除怪物
+        this.isFight = false;
+        map[y][x] = 0;
+        updateEnemy();
+        log("Beat the "+ enemy.name + ", got "+enemyProp.gold+" gold", tipStyle);
+        self.isFight = false;log(fightTimes)
+      }, self.fightSpeed * 50);
+      while(enemyProp.HP > 0){
+        
+        self.property.HP -= enemyProp.ATK - self.property.DEF;
+        enemyProp.HP -= self.property.ATK-enemyProp.DEF;
+        enemyProp.HP = enemyProp.HP<0 ? 0 : enemyProp.HP;
+        fightTimes++;
+        log(hero.property, heroStyle);
+        log(enemyProp, enemyStyle);
+      }
+    }else{
+      var timer = setInterval(function(){
+        if(enemyProp.HP > 0){
+          addFightEffect();
+          setTimeout(function(){
+            effectLayer.removeAllChild();
+          }, self.fightSpeed * 15);
+
+          if(!attackSound.playing) attackSound.play(); 
+          self.property.HP -= enemyProp.ATK - self.property.DEF;
+          enemyProp.HP -= self.property.ATK-enemyProp.DEF;
+          enemyProp.HP = enemyProp.HP<0 ? 0 : enemyProp.HP;
+          fightTimes++;
+          log(hero.property, heroStyle);
+          log(enemyProp, enemyStyle);
+        }else {
+          //战斗结算 获得金币，触发剧情等
+          effectLayer.removeAllChild();
+          self.property.gold += enemyProp.gold;
+          log(hero.property, heroStyle);
+          //战斗结束删除怪物
+          this.isFight = false;
+          map[y][x] = 0;
+          updateEnemy();
+          log("Beat the "+ enemy.name + ", got "+enemyProp.gold+" gold", tipStyle);
+          self.isFight = false;
+          clearInterval(timer);
+        }
+      }, self.fightSpeed * 30);
     }
-    while(enemyProp.HP > 0){
-      //战斗特效
-      this.property.HP -= enemyProp.ATK - this.property.DEF;
-      enemyProp.HP -= this.property.ATK-enemyProp.DEF;
-      enemyProp.HP = enemyProp.HP<0 ? 0 : enemyProp.HP;
-      log(hero.property);
-      log(enemyProp);
-    }
-    //战斗结算 获得金币，触发剧情等
-    this.property.gold += enemyProp.gold;
-    log(hero.property);
-    //战斗结束删除怪物
-    this.isFight = false;
-    map[y][x] = 0;
-    updateEnemy();
-    log("Beat the "+enemy.name+", got "+enemyProp.gold+" gold");
+    
   }
 };
 
-Hero.prototype.pickUpItem = function(x,y,item){
+Hero.prototype.pickUpItem = function(){
 
   var msg = "";
+  var x = this.position.x,
+    y = this.position.y;
+  var item = this.around.element;
   if(item.type){
     //非立即自动生效物品数量加1
     if(this.pack[item.name] == null){
@@ -223,24 +303,21 @@ Hero.prototype.pickUpItem = function(x,y,item){
     this.property[prop] += item.func[prop]*floor.domain;
     msg = ", And hero's "+prop+" add "+item.func[prop]*floor.domain;
   }
+  if(!pickupSound.playing)pickupSound.play();
   map[y][x] = 0;
   updateItem();
-  log("Got a "+ item.name+msg);
-  log(hero.property, hero.pack);
+  log("Got a " + item.name+msg, tipStyle);
+  log(hero.property, heroStyle);
+  log(hero.pack, heroStyle);
 };
 Hero.prototype.openDoor = function(x,y,key){
 
+  if(!openSound.playing)openSound.play();
   this.pack[key.name]-= 1;
   map[y][x] = 0;
   updateDoor();
-  log("open the door");
-  log(hero.pack);
-};
-
-Hero.prototype.onframe = function(){
-  if(this.move){
-    this.onmove();
-  }
+  log("open the door", tipStyle);
+  log(hero.pack, heroStyle);
 };
 
 var _isCanFight = function(hero, enemy) {
@@ -250,14 +327,15 @@ var _isCanFight = function(hero, enemy) {
   var enemyATK = enemy.property.ATK;
   var enemyHP = enemy.property.HP;
   var enemyDEF = enemy.property.DEF;
-  log(enemy.name,enemy.property);
+  log(enemy.name, enemyStyle);
+  log(enemy.property, enemyStyle);
   if(heroDEF >= enemyATK){
     return true;
   }else if( heroATK>enemyDEF && Math.ceil(enemyHP/(heroATK-enemyDEF)) <= Math.ceil(heroHP/(enemyATK-heroDEF)) ){
     return true;
   }else {
+    log("Can't beat it", tipStyle);
     return false;
-    log("Can't beat it");
   }
 }
 
@@ -266,7 +344,7 @@ var _isCanOpen = function(hero, key) {
   // 检测普通钥匙开门
   if(hero.pack[key.name] > 0) return true;
   else {
-    log("Can't open, you need a "+key.name);
+    log("Can't open, you need a "+key.name, tipStyle);
     return false;
   }
   // 条件门暂未处理

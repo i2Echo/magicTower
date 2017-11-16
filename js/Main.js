@@ -1,6 +1,4 @@
-var log = function(){
-  console.log.apply(console, arguments);
-}
+
 /**
  * 初始化库件
  */
@@ -41,10 +39,6 @@ var hero;
 /**
  * 常量
  */
-var DOWN = 0;
-var LEFT = 1;
-var RIGHT = 2;
-var UP = 3;
 
 //小图片跨度大小
 var STEP = 32;
@@ -54,15 +48,22 @@ var MAIN_GAME_HEIGHT = 13;
 // 有效游戏区对于canvas原点(0,0)的偏移
 var OFFSET_X = 1;
 var OFFSET_Y = 1;
-
+var FIGHT_IMG_INDEX = 27;
 var RESOURCES_PATH = './res/';
 
-var resourcesUrl = {
+var imageRes = {
   map: RESOURCES_PATH + 'map.png',
   hero: RESOURCES_PATH + 'hero.png',
   enemy: RESOURCES_PATH + 'enemy.png',
   items: RESOURCES_PATH + 'items.png',
   npc: RESOURCES_PATH + 'npc.png',
+}
+var _type = 'ogg';
+var soundRes = {
+  bgm: RESOURCES_PATH + 'bgm.mp3',
+  attack: RESOURCES_PATH + 'attack.'+_type,
+  open: RESOURCES_PATH + 'open.'+_type,
+  pickup: RESOURCES_PATH + 'get.'+_type,
 }
 
 var isKeyDown = false;
@@ -71,39 +72,44 @@ var isKeyDown = false;
  * 数组变量
  */
 //储存资源路径
-var resData = [];
-//储存加载后的图片列表信息
-var imgList = [];
+var loadData = [];
+//储存加载后的资源列表信息
+var dataList = [];
 
 /**
  * 主程序
  */
 function main(){
   LGlobal.setDebug(true);
-  //
-  resData.push({type:"js",path:"./js/support.js"});
-  resData.push({type:"js",path:"./js/Map.js"});
-  resData.push({type:"js",path:"./js/Hero.js"});
-  resData.push({type:"js",path:"./js/Enemy.js"});
-
-  //加载资源
-  resData.push({name:"map", path: resourcesUrl.map});
-  resData.push({name:"hero", path: resourcesUrl.hero});
-  resData.push({name:"enemy", path: resourcesUrl.enemy});
-  resData.push({name:"items", path: resourcesUrl.items});
-
+  //加载js
+  loadData.push({type:"js",path:"./js/sound.js"});
+  loadData.push({type:"js",path:"./js/Map.js"});
+  loadData.push({type:"js",path:"./js/Hero.js"});
+  loadData.push({type:"js",path:"./js/Enemy.js"});
+  loadData.push({type:"js",path:"./js/control.js"});
+  loadData.push({type:"js",path:"./js/support.js"});
+  //加载图片资源
+  loadData.push({name:"map", path: imageRes.map});
+  loadData.push({name:"hero", path: imageRes.hero});
+  loadData.push({name:"enemy", path: imageRes.enemy});
+  loadData.push({name:"items", path: imageRes.items});
+  //加载声音资源
+  loadData.push({name:"bgm", path: soundRes.bgm});
+  loadData.push({name:"attack", path: soundRes.attack});
+  loadData.push({name:"pickup", path: soundRes.pickup});
+  loadData.push({name:"open", path: soundRes.open});
   //加载剧本
-  resData.push({type:"js",path:"./js/script.js"});
+  loadData.push({type:"js",path:"./js/script.js"});
 
   loadingLayer = new LoadingSample3();
   addChild(loadingLayer);
   LLoadManage.load(
-    resData,
+    loadData,
     function(progress){
       loadingLayer.setProgress(progress);
     },
     function(result){
-      imgList =result;
+      dataList = result;
       removeChild(loadingLayer);
       loadingLayer = null;
       gameInit();
@@ -118,15 +124,13 @@ var gameInit = function(event){
   layerInit();
 
   scriptInit();
-
+  soundInit();
+  // bgm.play();
   //添加贞事件，开始游戏循环
   backLayer.addEventListener(LEvent.ENTER_FRAME,onFrame);
   if(!LGlobal.canTouch){
-    //电脑的时候，添加键盘事件 【上 下 左 右】
-    LEvent.addEventListener(LGlobal.window,LKeyboardEvent.KEY_DOWN,onkeydown);
-    LEvent.addEventListener(LGlobal.window,LKeyboardEvent.KEY_UP,onkeyup);
+    addKeyboadListener();
   }
-
 };
 /**
  * 游戏层显示初始化
@@ -148,12 +152,13 @@ function layerInit(){
   //人物层添加
   charaLayer = new LSprite();
   backLayer.addChild(charaLayer);
-  playerLayer = new LSprite();
-  charaLayer.addChild(playerLayer);
+
   enemyLayer = new LSprite();
   charaLayer.addChild(enemyLayer);
   npcLayer = new LSprite();
   charaLayer.addChild(npcLayer);
+  playerLayer = new LSprite();
+  charaLayer.addChild(playerLayer);
   //效果层添加
   effectLayer = new LSprite();
   backLayer.addChild(effectLayer);
@@ -172,7 +177,7 @@ function layerInit(){
  * @param {*Number} position_y 
  */
 var _bitmapdata = function(imgName, position_x, position_y){
-  return new LBitmapData(imgList[imgName],position_x*STEP,position_y*STEP,STEP,STEP);
+  return new LBitmapData(dataList[imgName],position_x*STEP,position_y*STEP,STEP,STEP);
 }
 /**
  * 根据ID返回相应对象
@@ -285,7 +290,7 @@ function addElement(){
 /**
  * 添加勇士
  */
-function addHero(){
+function addHero() {
   var heroData = script.hero;
 
   hero = new Hero(heroData);
@@ -294,6 +299,17 @@ function addHero(){
   hero.y = (heroData.position.y+OFFSET_Y)*STEP;
 
   playerLayer.addChild(hero);
+}
+function addFightEffect() {
+  var bitmap, position;
+  
+  position = _indexToPosition(FIGHT_IMG_INDEX)
+  bitmap = new LBitmap(_bitmapdata('map', position.x, position.y));
+  //设置小图片的显示位置
+  bitmap.x = hero.x;
+  bitmap.y = hero.y;
+
+  effectLayer.addChild(bitmap);
 }
 
 function updateEnemy() {
@@ -344,29 +360,15 @@ function updateMap() {
     }
   }
 }
-/**
- *
- * @param event
- */
-function onkeydown(event){
-  if(event.keyCode == 37){//left
-    hero.changeDir(LEFT);
-  }else if(event.keyCode == 38){//up
-    hero.changeDir(UP);
-  }else if(event.keyCode == 39){//right
-    hero.changeDir(RIGHT);
-  }else if(event.keyCode == 40){//down
-    hero.changeDir(DOWN);
-  }
-  isKeyDown = true;
-}
-function onkeyup(event){
-  isKeyDown = false;
-}
+
 /**
  * 帧循环
  * */
 function onFrame(){
+  if(!bgm.playing){ 
+    // bgm.play();
+  }
+  // if(!pickupSound.playing) pickupSound.play();
   for(var i=0;i<charaLayer.childList.length;i++)
     for(var j=0;j<charaLayer.childList[i].childList.length;j++){
       charaLayer.childList[i].childList[j].onframe();
