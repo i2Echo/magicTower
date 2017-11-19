@@ -55,6 +55,7 @@ var imageRes = {
   map: RESOURCES_PATH + 'map.png',
   hero: RESOURCES_PATH + 'hero.png',
   enemy: RESOURCES_PATH + 'enemy.png',
+  npc: RESOURCES_PATH + 'npc.png',
   items: RESOURCES_PATH + 'items.png',
   npc: RESOURCES_PATH + 'npc.png',
   big_monster: RESOURCES_PATH + 'big_Monster.png',
@@ -89,12 +90,14 @@ function main(){
   loadData.push({type:"js",path:"./js/Map.js"});
   loadData.push({type:"js",path:"./js/Hero.js"});
   loadData.push({type:"js",path:"./js/Enemy.js"});
+  loadData.push({type:"js",path:"./js/Npc.js"});
   loadData.push({type:"js",path:"./js/control.js"});
   loadData.push({type:"js",path:"./js/support.js"});
   //加载图片资源
   loadData.push({name:"map", path: imageRes.map});
   loadData.push({name:"hero", path: imageRes.hero});
   loadData.push({name:"enemy", path: imageRes.enemy});
+  loadData.push({name:"npc", path: imageRes.npc});
   loadData.push({name:"items", path: imageRes.items});
   loadData.push({name:"big_monster", path: imageRes.big_monster});
   //加载声音资源
@@ -243,6 +246,12 @@ var _setViewByid = function(id, map_x, map_y) {
         enemyLayer.addChild(bitmap);
       }
       break;
+    case 'npc':
+      bitmap = new Npc(element, 1);
+      bitmap.x = (map_x+OFFSET_X)*STEP;
+      bitmap.y = (map_y+OFFSET_Y)*STEP;
+      npcLayer.addChild(bitmap);
+      break;
   }
 }
 
@@ -318,6 +327,18 @@ function updateEnemy() {
       //读取map数组得到id
       id = map[i][j];
       if(_getTypeById(id) === 'enemy')
+        _setViewByid(id, j, i);
+    }
+  }
+}
+function updateNpc() {
+  enemyLayer.removeAllChild()
+
+  for(var i=0;i<MAIN_GAME_WIDTH-2;i++){
+    for(var j=0;j<MAIN_GAME_WIDTH-2;j++){
+      //读取map数组得到id
+      id = map[i][j];
+      if(_getTypeById(id) === 'npc')
         _setViewByid(id, j, i);
     }
   }

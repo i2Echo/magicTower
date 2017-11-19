@@ -1,5 +1,6 @@
 // 所有元素的信息 
 var elementsInfo = [
+  // 地形元素
   {id:0, name:"road", img:"map", imgIndex:0}
   ,{id:1, name:"wall", img:"map", imgIndex:1}
   ,{id:2, name:"purpleWall", img:"map", imgIndex:2}
@@ -7,13 +8,15 @@ var elementsInfo = [
   ,{id:4, name:"magma", img:"map", imgIndex:5}
   ,{id:5, name:"upStairs", img:"map", imgIndex:25}
   ,{id:6, name:"downStairs", img:"map", imgIndex:24}
+  ,{id:7, name:"Altar left", img:"map", imgIndex:28}
+  ,{id:8, name:"Altar right", img:"map", imgIndex:30}
   //门
   ,{id:10, name:"yellowDoor", img:"map", imgIndex:8, keyId: 21}
   ,{id:11, name:"blueDoor", img:"map", imgIndex:9, keyId: 22}
   ,{id:12, name:"redDoor", img:"map", imgIndex:10, keyId: 23}
   ,{id:13, name:"greenDoor", img:"map", imgIndex:11}
   ,{id:14, name:"ironDoor", img:"map", imgIndex:26}
-
+  ,{id:15, name:"hideDoor", img:"map", imgIndex:1}
 
 // 物品信息 编号为 20+
 //type为捡起物品后生效类型 => 
@@ -87,7 +90,18 @@ var elementsInfo = [
     ,func:{}}
 
   //npc 为80+
-
+  ,{id:81, name:"Old Man", img:"npc", imgIndex: 0, zh_name: "老者"
+    ,func:{}}
+  ,{id:82, name:"Merchant", img:"npc", imgIndex: 1, zh_name: "奸商"
+    ,func:{}}
+  ,{id:83, name:"Thief", img:"npc", imgIndex: 2, zh_name: "小偷"
+    ,func:{}}
+  ,{id:84, name:"Fairy", img:"npc", imgIndex: 3, zh_name: "仙子"
+    ,func:{}}
+  ,{id:85, name:"Altar", img:"npc", imgIndex: 6, zh_name: "商店"
+    ,func:{}}
+  ,{id:86, name:"Princess", img:"npc", imgIndex: 7, zh_name: "公主"
+    ,func:{}}
 
   //怪物编号为100+
   ,{id:101, name:"Green Slime", img:"enemy", imgIndex:0, zh_name: "绿史莱姆"
@@ -176,8 +190,10 @@ var _getTypeById = function(id){
   if(id < 10) return 'map';
   // 11~20 为门
   if(id >= 10 && id <= 20) return 'door';
-  // 21~100 为物品
-  if(id > 20 && id <= 100) return 'item';
+  // 21~80 为物品
+  if(id > 20 && id <= 80) return 'item';
+  // 81~100 为npc
+  if(id > 80 && id <= 100) return 'npc';
   // 100+ 为怪物
   if(id > 100) return 'enemy';
 }

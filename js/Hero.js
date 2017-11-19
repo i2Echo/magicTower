@@ -166,15 +166,15 @@ Hero.prototype.checkRoad = function(direction){
     if(_getTypeById(targetTileId) === 'enemy'){
       var enemy = _getInfoById(targetTileId);
       if(!enemy.isBig || (enemy.isBig && _isBigMonsterHotZone(targetTileId, to_x, to_y))){
-        if(_isCanFight(this, enemy)){ log("fighting===")
+        if(_isCanFight(this, enemy)){
           this.around.element = JSON.parse(JSON.stringify(enemy));
           this.around.canFight = true;
           // this.fight(to_x,to_y,enemy);
           return true;
-        }else {log("nofighting===")
+        }else {
           return false;
         }
-      }else {log("nofighting===")
+      }else {
         return false;
       }
     }
@@ -314,8 +314,8 @@ Hero.prototype.pickUpItem = function(){
   }else{
     //拾取立即生效物品添加对应属性
     var prop = Object.getOwnPropertyNames(item.func)[0];
-    this.property[prop] += item.func[prop]*floor.domain;
-    msg = ", And hero's "+prop+" add "+item.func[prop]*floor.domain;
+    this.property[prop] += item.func[prop]*this.position.atFloor.domain;
+    msg = ", And hero's "+prop+" add "+item.func[prop]*this.position.atFloor.domain;
   }
   if(!pickupSound.playing)pickupSound.play();
   map[y][x] = 0;
@@ -368,10 +368,8 @@ var _isCanOpen = function(hero, key) {
  * 如果左右都有，下方没有则说明该部分是大怪的有效攻击区
  */
 var _isBigMonsterHotZone = function(id, x, y){
-  log(id,map)
   if(id === map[y][x-1] && id === map[y][x+1] && id !== map[y+1][x]){
-    log("canbigfighting===")
     return true;
-  }log("bobigfighting===")
+  }
   return false;
 }
