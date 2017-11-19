@@ -18,14 +18,14 @@ function Hero(heroData, imgData) {
   self.position = heroData.position;
 
   var imgData = new LBitmapData(dataList[heroData.img]);
-  imgData.setProperties(0, 0, imgData.image.width / IMG_COL, imgData.image.height / IMG_ROW);
+  // imgData.setProperties(0, 0, imgData.image.width / IMG_COL, imgData.image.height / IMG_ROW);
   var list = LGlobal.divideCoordinate(imgData.image.width, imgData.image.height, IMG_ROW, IMG_COL);
 
   self.anime = new LAnimation(self, imgData, list);
   //移动速度设定
   self.speed = 0;
   self.speedIndex = 0;
-  self.isFightFast = true;
+  self.isFightFast = false;
   self.fightSpeed = 10;
   //初始设定不移动
   self.move = false;
@@ -164,19 +164,24 @@ Hero.prototype.checkRoad = function(direction){
   else {
     // 遇到怪物
     if(_getTypeById(targetTileId) === 'enemy'){
-
-      var enemy = _findInfoById(targetTileId);
-      if(_isCanFight(this, enemy)){
-        this.around.element = JSON.parse(JSON.stringify(enemy));
-        this.around.canFight = true;
-        // this.fight(to_x,to_y,enemy);
-        return true;
+      var enemy = _getInfoById(targetTileId);
+      if(!enemy.isBig || (enemy.isBig && _isBigMonsterHotZone(targetTileId, to_x, to_y))){
+        if(_isCanFight(this, enemy)){ log("fighting===")
+          this.around.element = JSON.parse(JSON.stringify(enemy));
+          this.around.canFight = true;
+          // this.fight(to_x,to_y,enemy);
+          return true;
+        }else {log("nofighting===")
+          return false;
+        }
+      }else {log("nofighting===")
+        return false;
       }
     }
     //遇到物品
     if(_getTypeById(targetTileId) === 'item'){
 
-      var item = _findInfoById(targetTileId);
+      var item = _getInfoById(targetTileId);
       this.around.element = JSON.parse(JSON.stringify(item));
       this.around.canPickup = true;
       // this.pickUpItem(to_x,to_y,item);
@@ -185,8 +190,8 @@ Hero.prototype.checkRoad = function(direction){
     //遇到门
     if(_getTypeById(targetTileId) === 'door'){
       
-      var door = _findInfoById(targetTileId);
-      var keyForDoor = _findInfoById(door.keyId);
+      var door = _getInfoById(targetTileId);
+      var keyForDoor = _getInfoById(door.keyId);
       if(_isCanOpen(this, keyForDoor)) this.openDoor(to_x,to_y,keyForDoor);
       return false;
     }
@@ -274,6 +279,15 @@ Hero.prototype.fight = function(){
           //战斗结束删除怪物
           this.isFight = false;
           map[y][x] = 0;
+          if(enemy.isBig){ //打败大怪获得特殊道具奖励
+            map[y-2][x-1] = map[y-2][x] = map[y-2][x+1] = 0;
+            map[y-1][x-1] = map[y-1][x] = map[y-1][x+1] = 0;
+            map[y][x-1] = map[y][x+1] = 0;
+            if(enemy.reward) {
+              map[y-1][x] = enemy.reward;
+              updateItem();
+            }
+          }
           updateEnemy();
           log("Beat the "+ enemy.name + ", got "+enemyProp.gold+" gold", tipStyle);
           self.isFight = false;
@@ -348,4 +362,16 @@ var _isCanOpen = function(hero, key) {
     return false;
   }
   // 条件门暂未处理
+}
+/**
+ * 碰到大怪时，判断是否是大怪的有效区
+ * 如果左右都有，下方没有则说明该部分是大怪的有效攻击区
+ */
+var _isBigMonsterHotZone = function(id, x, y){
+  log(id,map)
+  if(id === map[y][x-1] && id === map[y][x+1] && id !== map[y+1][x]){
+    log("canbigfighting===")
+    return true;
+  }log("bobigfighting===")
+  return false;
 }

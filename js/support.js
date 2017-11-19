@@ -6,14 +6,13 @@ var heroStyle = commStyle + "background-color: #795548;";
 var tipStyle = commStyle + "background-color: #2196F3;";
 
 var log = function(){
-  if(arguments.length > 1){
+  if(arguments.length > 1 && _typeOf(arguments[arguments.length-1]) === "string"){
     if( _typeOf(arguments[0]) === 'object'){
     arguments[0] = JSON.stringify(arguments[0]);
-  }
-  arguments[0] = '%c ' + arguments[0];
+    }
+    arguments[0] = '%c ' + arguments[0];
   }
   
-
   console.log.apply(console, arguments);
 }
 

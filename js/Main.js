@@ -57,6 +57,7 @@ var imageRes = {
   enemy: RESOURCES_PATH + 'enemy.png',
   items: RESOURCES_PATH + 'items.png',
   npc: RESOURCES_PATH + 'npc.png',
+  big_monster: RESOURCES_PATH + 'big_Monster.png',
 }
 var _type = 'ogg';
 var soundRes = {
@@ -68,6 +69,7 @@ var soundRes = {
 
 var isKeyDown = false;
 
+var big_monster_part_count = 0;
 /**
  * 数组变量
  */
@@ -82,6 +84,7 @@ var dataList = [];
 function main(){
   LGlobal.setDebug(true);
   //加载js
+  loadData.push({type:"js",path:"./js/data.js"});
   loadData.push({type:"js",path:"./js/sound.js"});
   loadData.push({type:"js",path:"./js/Map.js"});
   loadData.push({type:"js",path:"./js/Hero.js"});
@@ -93,6 +96,7 @@ function main(){
   loadData.push({name:"hero", path: imageRes.hero});
   loadData.push({name:"enemy", path: imageRes.enemy});
   loadData.push({name:"items", path: imageRes.items});
+  loadData.push({name:"big_monster", path: imageRes.big_monster});
   //加载声音资源
   loadData.push({name:"bgm", path: soundRes.bgm});
   loadData.push({name:"attack", path: soundRes.attack});
@@ -179,17 +183,7 @@ function layerInit(){
 var _bitmapdata = function(imgName, position_x, position_y){
   return new LBitmapData(dataList[imgName],position_x*STEP,position_y*STEP,STEP,STEP);
 }
-/**
- * 根据ID返回相应对象
- * @param {*Number} id 
- */
-var _findInfoById = function(id) {
-  for (var i=0; i<elementsInfo.length; i++){
-    if(id === elementsInfo[i].id) {
-      return elementsInfo[i];
-    }
-  }
-}
+
 /**
  * 图片索引转换成坐标
  * @param {*Number} index 
@@ -201,16 +195,7 @@ var _indexToPosition = function(index){
 
   return {x, y};
 }
-var _getTypeById = function(id){
-  // 10以内为地图地形
-  if(id < 10) return 'map';
-  // 11~20 为门
-  if(id >= 10 && id <= 20) return 'door';
-  // 21~100 为物品
-  if(id > 20 && id <= 100) return 'item';
-  // 100+ 为怪物
-  if(id > 100) return 'enemy';
-}
+
 /**
  * 
  * @param {*Number} id 
@@ -218,9 +203,9 @@ var _getTypeById = function(id){
  * @param {*Number} map_y 
  */
 var _setViewByid = function(id, map_x, map_y) {
-  var bitmap, element, position;
+  var bitmap, element, position, bigMonsterIsDraw = false;
 
-  element = _findInfoById(id);
+  element = _getInfoById(id);
 
   position = _indexToPosition(element.imgIndex)
   bitmap = new LBitmap(_bitmapdata(element.img, position.x, position.y));
@@ -240,10 +225,23 @@ var _setViewByid = function(id, map_x, map_y) {
       itemLayer.addChild(bitmap);
       break;
     case 'enemy':
-      bitmap = new Enemy(element, 1);
-      bitmap.x = (map_x+OFFSET_X)*STEP;
-      bitmap.y = (map_y+OFFSET_Y)*STEP;
-      enemyLayer.addChild(bitmap);
+      
+      if(element.isBig){
+        if(big_monster_part_count === 8){
+          bitmap = new Enemy(element, 1);
+          bitmap.x = (map_x+OFFSET_X-2)*STEP;
+          bitmap.y = (map_y+OFFSET_Y-2)*STEP;
+          enemyLayer.addChild(bitmap);
+          big_monster_part_count = 0;
+        }else {
+          big_monster_part_count++;
+        }
+      }else{ 
+        bitmap = new Enemy(element, 1);
+        bitmap.x = (map_x+OFFSET_X)*STEP;
+        bitmap.y = (map_y+OFFSET_Y)*STEP;
+        enemyLayer.addChild(bitmap);
+      }
       break;
   }
 }

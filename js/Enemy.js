@@ -3,23 +3,24 @@
  * 怪物
  */
 
-
 function Enemy(enemyData,speed){
-  // 怪物图片的怪物数宽高
-  var IMG_COL = 4;
-  var IMG_ROW = 40;
+  // enemy图片的怪物数宽高 4*40
+  var img_col = 4;
+  var img_row = 40;
+  // bigmonster图片怪物数宽高 4*4
 
   base(this,LSprite,[]);
   
   this.property = JSON.parse(JSON.stringify(enemyData.property));
   this.speed = speed === null ? 3 : speed;
   this.speedIndex = 0;
-
+  this.partCount = 0;
+  this.isBig = enemyData.isBig;
+  if(this.isBig) img_row = 4;
   var imgData = new LBitmapData(dataList[enemyData.img]);
   var width = imgData.image.width;
   var height = imgData.image.height;
-  imgData.setProperties(0, 0, 32, 32);
-  var list = LGlobal.divideCoordinate(width, height, IMG_ROW, IMG_COL);
+  var list = LGlobal.divideCoordinate(width, height, img_row, img_col);
 
   this.anime = new LAnimation(this,imgData,list);
   this.anime.setAction(enemyData.imgIndex);
